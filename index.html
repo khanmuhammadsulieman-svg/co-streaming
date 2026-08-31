@@ -62,7 +62,6 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
 <header>
   <div class="brand">CO STREAMING<small id="syncStatus">CONNECTED...</small></div>
   <div style="display:flex;gap:8px;align-items:center">
-    <button id="installBtn" class="small" style="display:none;background:#2563eb;color:#fff" onclick="installApp()">⬇ Install App</button>
     <button class="primary small hideMob" onclick="openSale()">＋ Sale</button>
     <div style="position:relative;">
       <button class="menu-btn" onclick="toggleMenu(event)">⋮</button>
@@ -293,6 +292,10 @@ function dashboard(){
  const pending=data.sales.filter(s=>s.payment!=='Paid');
  
  return `<h1>Admin Overview</h1><p class="muted">Co Streaming Dashboard</p>
+ <div id="dashboardInstallCard" class="card" style="background:linear-gradient(135deg, #2563eb, #1d4ed8);color:#fff;margin-bottom:18px;display:none;align-items:center;justify-content:space-between">
+   <div><b>📲 Install Co Streaming App</b><br><span style="font-size:12px;color:#e0e7ff">Add this app to your phone screen for instant one-tap access.</span></div>
+   <button class="primary" style="background:#fff;color:#1d4ed8" onclick="installApp()">Download Now</button>
+ </div>
  <div class="cards">
  <div class="card" onclick="showDetails('income')" style="cursor:pointer"><small>💼 PAID SALES</small><b>${rs(paid)}</b></div>
  <div class="card" onclick="showDetails('purchase')" style="cursor:pointer"><small>🛒 PURCHASE COST</small><b>${rs(cost)}</b></div>
@@ -371,7 +374,7 @@ function openProduct() {
   <div class="full actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div></form>`);
   document.getElementById('pf').onsubmit = e => {
     e.preventDefault();
-    data.products.push({ id: Date.now(), name: document.getElementById('pn').value, price: +document.getElementById('pp').value, type: document.getElementById('pt').value });
+    data.products.push({ id: Date.now(), name: document.getElementById('pn'].value, price: +document.getElementById('pp').value, type: document.getElementById('pt').value });
     save(); closeModal(); render();
   };
 }
@@ -421,6 +424,10 @@ function reports(){ return `<h1>Reports & Backup</h1><button class="primary" onc
 
 window.renderApp = function() {
   document.getElementById('app').innerHTML = page==='dashboard'?dashboard():page==='sales'?salesPage():page==='products'?productsPage():page==='clients'?clientsPage():page==='pending'?pendingPage():page==='expenses'?expensesPage():page==='profit'?profitPage():reports();
+  if(page === 'dashboard' && deferredInstallPrompt) {
+    let el = document.getElementById('dashboardInstallCard');
+    if(el) el.style.display = 'flex';
+  }
 }
 function render() { window.renderApp(); }
 
@@ -432,7 +439,8 @@ let deferredInstallPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  document.getElementById('installBtn').style.display = 'inline-block';
+  let el = document.getElementById('dashboardInstallCard');
+  if(el) el.style.display = 'flex';
 });
 
 window.installApp = async function() {
@@ -443,7 +451,8 @@ window.installApp = async function() {
   deferredInstallPrompt.prompt();
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
-  document.getElementById('installBtn').style.display = 'none';
+  let el = document.getElementById('dashboardInstallCard');
+  if(el) el.style.display = 'none';
 }
 
 onSnapshot(cloudRef, snap => {
