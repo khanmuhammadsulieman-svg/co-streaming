@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#101827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>DR Streaming Manager V2</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#687386;--blue:#2563eb;--line:#e6eaf0}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{height:64px;background:#101827;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;z-index:5}.brand{font-weight:800;font-size:18px}.brand small{display:block;font-size:9px;color:#94a3b8;margin-top:3px}.container{max-width:1050px;margin:auto;padding:18px 16px 88px}
+h1{font-size:25px;margin:4px 0}h2{font-size:18px;margin:0}.muted{color:var(--muted);font-size:13px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:16px}.card small{color:var(--muted)}.card b{display:block;font-size:23px;margin-top:8px}
+section{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px;margin:14px 0}.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;background:#e9edf4;color:#243044}.primary{background:var(--blue);color:#fff}.danger{background:#fee2e2;color:#b91c1c}.small{padding:7px 9px;font-size:12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid #eef1f5;font-size:13px}th{font-size:10px;color:var(--muted);text-transform:uppercase}.table{overflow:auto}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:flex-start;gap:3px;padding:7px;z-index:6;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,7px)}
+.nav{background:transparent;color:#667085;font-size:11px;min-width:70px;flex-shrink:0}.nav.on{color:var(--blue)}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;padding:15px;place-items:center}.modal.show{display:grid}.box{background:#fff;width:min(720px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:bold}.field input,.field select,.field textarea{width:100%;border:1px solid #dbe1ea;border-radius:8px;padding:11px;font:inherit;background:#fff}.full{grid-column:1/-1}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}.badge{padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold}.Active{background:#dcfce7;color:#166534}.Expiring{background:#ffedd5;color:#c2410c}.Expired{background:#fee2e2;color:#b91c1c}
+.tabs{display:flex;gap:7px;flex-wrap:wrap}.tab{background:#eef2f7}.tab.on{background:#dbeafe;color:#1d4ed8}.empty{text-align:center;color:var(--muted);padding:25px}
+.menu-btn{background:transparent;color:#fff;font-size:24px;padding:0 5px;line-height:1;}
+.menu-content{display:none;position:absolute;right:0;top:100%;background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);min-width:180px;z-index:100;flex-direction:column;overflow:hidden;}
+.menu-content.show{display:flex;}
+.menu-content a{padding:12px 16px;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;font-weight:bold;text-decoration:none;color:#172033;}
+.menu-content a:hover{background:#f5f7fb;}
+@media(max-width:700px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}.card b{font-size:18px}.hideMob{display:none}}
+</style>
+<script>
+  function instantLoginCheck(event) {
+    event.preventDefault();
+    const u = document.getElementById('loginUser').value;
+    const p = document.getElementById('loginPass').value;
+    if (u === 'admin' && p === 'admin') {
+      sessionStorage.setItem('auth', 'true');
+      document.getElementById('loginScreen').style.display = 'none';
+      if(window.renderApp) window.renderApp();
+    } else {
+      alert("Incorrect Username or Password. Use admin / admin");
+    }
+  }
+</script>
+</head>
+<body>
+
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+  <div class="card" style="width:min(90%, 350px);box-shadow:0 8px 24px rgba(0,0,0,0.05);">
+    <h2 style="margin-bottom:16px;text-align:center">DR Streaming V2</h2>
+    <form onsubmit="instantLoginCheck(event)" class="grid">
+      <label class="field full"><span>Username</span><input id="loginUser" required placeholder="admin"></label>
+      <label class="field full"><span>Password</span><input id="loginPass" type="password" required placeholder="admin"></label>
+      <div class="full" style="margin-top:10px;">
+        <button class="primary" type="submit" style="width:100%;padding:12px;font-size:14px">Login to Dashboard</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<header>
+  <div class="brand">DR STREAMING V2<small id="syncStatus">CONNECTED...</small></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <button class="primary small hideMob" onclick="openSale()">＋ Sale</button>
+    <div style="position:relative;">
+      <button class="menu-btn" onclick="toggleMenu(event)">⋮</button>
+      <div id="menuDropdown" class="menu-content">
+        <a onclick="go('dashboard');closeMenu()">🏠 Dashboard</a>
+        <a onclick="go('sales');closeMenu()">💰 Sales</a>
+        <a onclick="go('products');closeMenu()">📦 Products</a>
+        <a onclick="go('clients');closeMenu()">👥 Clients</a>
+        <a onclick="go('pending');closeMenu()">⏳ Pending</a>
+        <a onclick="go('expenses');closeMenu()">💸 Expenses</a>
+        <a onclick="go('profit');closeMenu()">📈 Profit</a>
+        <a onclick="go('reports');closeMenu()">📊 Reports</a>
+        <a onclick="logoutUser();closeMenu()" style="color:#b91c1c">🚪 Logout</a>
+      </div>
+    </div>
+  </div>
+</header>
+<div id="app" class="container"></div>
+<nav class="bottom" id="bottomNav">
+<button class="nav on" data-page="dashboard" onclick="go('dashboard')">🏠<br>Home</button>
+<button class="nav" data-page="sales" onclick="go('sales')">💰<br>Sales</button>
+<button class="nav" data-page="products" onclick="go('products')">📦<br>Products</button>
+<button class="nav" data-page="clients" onclick="go('clients')">👥<br>Clients</button>
+<button class="nav" data-page="pending" onclick="go('pending')">⏳<br>Pending</button>
+<button class="nav" data-page="expenses" onclick="go('expenses')">💸<br>Expenses</button>
+<button class="nav" data-page="profit" onclick="go('profit')">📈<br>Profit</button>
+<button class="nav" data-page="reports" onclick="go('reports')">📊<br>Reports</button>
+</nav>
+
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDarSjtR0RhflCSttQ1XWr3oKMNe2_43Y",
+  authDomain: "dr-streaming.firebaseapp.com",
+  projectId: "dr-streaming",
+  storageBucket: "dr-streaming.firebasestorage.app",
+  messagingSenderId: "702895699219",
+  appId: "1:702895699219:web:e4773b6f22571bcc7f56e6",
+  measurementId: "G-J2VP61C6GS"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestore = getFirestore(firebaseApp);
+const cloudRef = doc(firestore, "dr_streaming_v2", "independent_admin");
+
+let cloudReady = false;
+const DB = 'dr_streaming_v2_local';
+let data = JSON.parse(localStorage.getItem(DB) || '{}');
+
+if(!data.sales) data.sales=[];
+if(!data.expenses) data.expenses=[];
+
+const iconMap = {
+  'netflix pakistan': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#01411C"/><path d="M141.5 96h60l110 320h-60l-110-320z" fill="#E50914"/><path d="M141.5 96h55v320h-55z" fill="#E50914"/><path d="M315.5 96h55v320h-55z" fill="#E50914"/><path d="M201.5 96h60l110 320h-60l-110-320z" fill="#E50914"/></svg>',
+  'netflix': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#111"/><path d="M141.5 64h60l110 384h-60l-110-384z" fill="#E50914"/><path d="M141.5 64h55v384h-55z" fill="#E50914"/><path d="M315.5 64h55v384h-55z" fill="#E50914"/><path d="M201.5 64h60l110 384h-60l-110-384z" fill="#E50914"/></svg>',
+  'prime': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#131A22"/><path d="M140 280c25 50 80 80 140 80 60 0 115-30 140-80" stroke="#00A8E1" stroke-width="28" fill="none" stroke-linecap="round"/><path d="M380 250l40 35-45 20" fill="#00A8E1"/></svg>',
+  'sony': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#003791"/><text x="256" y="300" fill="#fff" font-family="Arial" font-weight="900" font-size="120" text-anchor="middle">SONY</text></svg>',
+  'hotstar': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#0f1026"/><path d="M256 96l40 90 95 15-70 65 20 95-85-50-85 50 20-95-70-65 95-15z" fill="#1f80e0"/></svg>',
+  'iptv': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#065F46"/><path d="M96 144h320v200H96z" fill="none" stroke="#34D399" stroke-width="32" rx="16"/><path d="M192 344l-32 56h192l-32-56" fill="none" stroke="#34D399" stroke-width="32" stroke-linecap="round"/></svg>',
+  'vpn': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#DC2626"/><circle cx="256" cy="256" r="110" fill="none" stroke="#fff" stroke-width="32"/><path d="M256 146v220M146 256h220" stroke="#fff" stroke-width="32" stroke-linecap="round"/></svg>',
+  'chatgpt': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#10A37F"/><path d="M336 210c-10-40-40-70-80-70-50 0-90 40-90 90 0 10 2 20 5 30-30 15-50 45-50 80 0 50 40 90 90 90 35 0 65-20 80-50 10 3 20 5 30 5 50 0 90-40 90-90 0-40-25-75-65-85z" fill="#fff"/></svg>',
+  'claude': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#D97706"/><circle cx="256" cy="256" r="120" fill="#fff"/></svg>',
+  'midjourney': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#4F46E5"/><path d="M160 360V152h48v208h-48zm144 0V152h48v208h-48z" fill="#fff"/></svg>',
+  'capcut': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#000"/><path d="M200 160l112 96-112 96V160z" fill="#fff"/></svg>',
+  'heygen': '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#8B5CF6"/><circle cx="256" cy="256" r="100" fill="#fff"/></svg>'
+};
+
+function getProductIcon(name){
+  let n = (name || '').toLowerCase();
+  for(let key in iconMap){
+    if(n.includes(key)) return iconMap[key];
+  }
+  return '<svg width="32" height="32" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#E2E8F0"/><path d="M256 160v192M160 256h192" stroke="#64748B" stroke-width="32" stroke-linecap="round"/></svg>';
+}
+
+const defaultProducts = [
+  { id: 1, name: 'Netflix Global', type: 'Subscription', price: 1200 },
+  { id: 2, name: 'Netflix Pakistan', type: 'Subscription', price: 1100 },
+  { id: 3, name: 'Prime Video', type: 'Subscription', price: 800 },
+  { id: 4, name: 'Sony Liv', type: 'Subscription', price: 700 },
+  { id: 5, name: 'JioHotstar', type: 'Subscription', price: 750 },
+  { id: 6, name: 'My OTT IPTV', type: 'Subscription', price: 1500 },
+  { id: 7, name: 'ExpressVPN', type: 'Subscription', price: 1000 },
+  { id: 8, name: 'NordVPN', type: 'Subscription', price: 950 },
+  { id: 9, name: 'Surfshark VPN', type: 'Subscription', price: 900 },
+  { id: 10, name: 'ChatGPT Plus', type: 'Subscription', price: 2000 },
+  { id: 11, name: 'Claude AI', type: 'Subscription', price: 1800 },
+  { id: 12, name: 'Midjourney', type: 'Subscription', price: 2200 },
+  { id: 13, name: 'HeyGen AI', type: 'Subscription', price: 2500 }
+];
+
+if(!data.products || data.products.length === 0) {
+  data.products = defaultProducts;
+}
+
+let page='dashboard', reportRange='month';
+
+window.onload = () => {
+  if(sessionStorage.getItem('auth') === 'true') {
+    document.getElementById('loginScreen').style.display = 'none';
+    render();
+  }
+}
+
+window.toggleMenu = e => { e.stopPropagation(); document.getElementById('menuDropdown').classList.toggle('show'); }
+window.closeMenu = () => { document.getElementById('menuDropdown').classList.remove('show'); }
+window.onclick = e => { if (!e.target.matches('.menu-btn')) closeMenu(); }
+window.logoutUser = () => { sessionStorage.clear(); window.location.reload(); }
+
+async function save(){
+  localStorage.setItem(DB,JSON.stringify(data));
+  if(!cloudReady) return;
+  try{
+    document.getElementById('syncStatus').textContent='SAVING...';
+    await setDoc(cloudRef,{data,updatedAt:new Date().toISOString()});
+    document.getElementById('syncStatus').textContent='CLOUD SYNCED ✓';
+  }catch(e){
+    document.getElementById('syncStatus').textContent='OFFLINE MODE';
+  }
+}
+
+const rs=n=>'Rs. '+Number(n||0).toLocaleString('en-PK');
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const dateObj=d=>new Date(d+'T00:00:00');
+const expiry=(d,n)=>{let x=dateObj(d);x.setDate(x.getDate()+Number(n));return x.toISOString().slice(0,10)};
+const days=d=>Math.ceil((dateObj(d)-new Date(new Date().toDateString()))/86400000);
+const status=s=>!s.expiry?'—':days(s.expiry)<0?'Expired':days(s.expiry)<=7?'Expiring':'Active';
+const income=a=>a.filter(s=>s.payment==='Paid').reduce((x,s)=>x+Number(s.amount||0),0) + a.filter(s=>s.payment==='Partial').reduce((x,s)=>x+Number(s.partialPaid||0),0);
+const grossSales=a=>a.reduce((x,s)=>x+Number(s.amount||0),0);
+const purchase=a=>a.reduce((x,s)=>x+Number(s.purchase||0),0);
+const expenses=a=>a.reduce((x,s)=>x+Number(s.amount||0),0);
+
+function modal(html){modalBox.innerHTML=html;document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function go(p){page=p;document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.page===p));render()}
+
+function dashboard(){
+ const paid=income(data.sales), gross=grossSales(data.sales);
+ const cost=purchase(data.sales.filter(s=>s.payment==='Paid' || s.payment==='Partial')), exp=expenses(data.expenses), profit=paid-cost-exp;
+ const pending=data.sales.filter(s=>s.payment!=='Paid');
+ 
+ return `<h1>Admin Overview</h1><p class="muted">Independent Dashboard v2</p>
+ <div class="cards">
+ <div class="card" onclick="showDetails('income')" style="cursor:pointer"><small>💼 PAID SALES</small><b>${rs(paid)}</b></div>
+ <div class="card" onclick="showDetails('purchase')" style="cursor:pointer"><small>🛒 PURCHASE COST</small><b>${rs(cost)}</b></div>
+ <div class="card" onclick="showDetails('expenses')" style="cursor:pointer"><small>💸 EXPENSES</small><b>${rs(exp)}</b></div>
+ <div class="card" onclick="showDetails('profit')" style="cursor:pointer"><small>📈 NET PROFIT</small><b>${rs(profit)}</b></div>
+ <div class="card" onclick="showDetails('transactions')" style="cursor:pointer"><small>📦 TRANSACTIONS</small><b>${data.sales.length}</b></div>
+ <div class="card" onclick="showDetails('pending')" style="cursor:pointer"><small>⏳ PENDING</small><b>${pending.length}</b></div>
+ </div>
+ <section><div class="sectionHead"><h2>Recent Sales</h2><button class="small" onclick="go('sales')">View All</button></div>${salesTable(data.sales.slice(0,6),false)}</section>`;
+}
+
+function showDetails(type){
+ const paid=income(data.sales), cost=purchase(data.sales.filter(s=>s.payment==='Paid' || s.payment==='Partial')), exp=expenses(data.expenses);
+ const pending=data.sales.filter(s=>s.payment!=='Paid');
+ let title='',body='';
+ const list=a=>a.length?`<div class="table"><table><thead><tr><th>Client</th><th>Item</th><th>Amount</th><th>Status</th></tr></thead><tbody>${a.map(s=>`<tr><td>${esc(s.client)}</td><td>${esc(s.product)}</td><td>${rs(s.amount)}</td><td>${s.payment}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No records found.</div>';
+ if(type==='income'){title='💼 Paid Income';body=`<h2>${rs(paid)}</h2>${list(data.sales.filter(s=>s.payment==='Paid'||s.payment==='Partial'))}`;}
+ if(type==='purchase'){title='🛒 Purchase Cost';body=`<h2>${rs(cost)}</h2>${list(data.sales.filter(s=>Number(s.purchase||0)>0))}`;}
+ if(type==='expenses'){title='💸 Expenses';body=`<h2>${rs(exp)}</h2><button class="primary" onclick="closeModal();go('expenses')">Open Expenses</button>`;}
+ if(type==='profit'){title='📈 Net Profit';body=`<div class="card"><small>NET PROFIT</small><b>${rs(paid-cost-exp)}</b></div>`;}
+ if(type==='transactions'){title='📦 All Transactions';body=list(data.sales);}
+ if(type==='pending'){title='⏳ Pending';body=list(pending);}
+ modal(`<div class="sectionHead"><h2>${title}</h2><button onclick="closeModal()">×</button></div>${body}`);
+}
+
+window.prefetchProduct = function(name, price, type, tenure) {
+  document.getElementById('customProduct').value = name;
+  document.getElementById('sa').value = price;
+  document.getElementById('stm').value = tenure;
+  document.querySelectorAll('.prefetch-chip').forEach(c => c.style.borderColor = '#dbe1ea');
+  event.currentTarget.style.borderColor = 'var(--blue)';
+}
+
+function openSale(){
+  let prefetchChips = data.products.map(p => `<div class="prefetch-chip" onclick="prefetchProduct('${esc(p.name)}', ${p.price}, '${p.type}', ${p.type==='Subscription'?30:0})" style="display:inline-flex;align-items:center;gap:8px;background:#f8fafc;border:2px solid #dbe1ea;border-radius:12px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:bold">${getProductIcon(p.name)}<div style="text-align:left"><span>${esc(p.name)}</span><br><span class="muted">${rs(p.price)}</span></div></div>`).join('');
+  let opts=data.products.map(p=>`<option value="${p.id}">${esc(p.name)} — ${p.type}</option>`).join('');
+  
+  modal(`<div class="sectionHead"><h2>Add Sale</h2><button onclick="closeModal()">×</button></div><form id="sf" class="grid">
+  <label class="field full"><span>⚡ Quick Prefetch:</span><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:180px;overflow-y:auto">${prefetchChips}</div></label>
+  <label class="field"><span>Product / Service *</span><select id="sp"><option value="">Custom</option>${opts}</select></label>
+  <label class="field full"><span>Product Name</span><input id="customProduct" placeholder="Product name"></label>
+  <label class="field"><span>Client Name *</span><input id="sc" required placeholder="Customer Name"></label>
+  <label class="field"><span>Phone / WhatsApp</span><input id="sph" placeholder="03001234567"></label>
+  <label class="field"><span>Amount *</span><input id="sa" type="number" required placeholder="0"></label>
+  <label class="field"><span>Purchase Cost</span><input id="spurchase" type="number" value="0" placeholder="0"></label>
+  <label class="field"><span>Sale Date</span><input id="sd" type="date" value="${today()}" required></label>
+  <label class="field"><span>Payment</span><select id="payment"><option>Paid</option><option>Pending</option><option>Partial</option></select></label>
+  <label class="field"><span>Tenure Days</span><input id="stm" type="number" value="30"></label>
+  <div class="full actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save Sale</button></div></form>`);
+
+  document.getElementById('sp').onchange = () => {
+    let p = data.products.find(x => x.id == document.getElementById('sp').value);
+    if(p){ document.getElementById('customProduct').value = p.name; document.getElementById('sa').value = p.price; document.getElementById('stm').value = p.type === 'Subscription' ? '30' : '0'; }
+  };
+
+  document.getElementById('sf').onsubmit = e => {
+    e.preventDefault();
+    let name = document.getElementById('customProduct').value.trim();
+    if(!name){ alert('Provide name'); return; }
+    let tenure = +document.getElementById('stm').value;
+    let saleDate = document.getElementById('sd').value;
+    data.sales.unshift({
+      id: Date.now(), client: document.getElementById('sc').value, phone: document.getElementById('sph').value,
+      product: name, amount: +document.getElementById('sa').value, purchase: +document.getElementById('spurchase').value,
+      date: saleDate, expiry: tenure ? expiry(saleDate, tenure) : '', payment: document.getElementById('payment').value, tenure, type: tenure ? 'Subscription' : 'Product'
+    });
+    save(); closeModal(); render();
+  };
+}
+
+function openProduct() {
+  modal(`<div class="sectionHead"><h2>Add Product</h2><button onclick="closeModal()">×</button></div><form id="pf" class="grid">
+  <label class="field full"><span>Name *</span><input id="pn" required></label>
+  <label class="field"><span>Price *</span><input id="pp" type="number" required></label>
+  <label class="field"><span>Type</span><select id="pt"><option>Subscription</option><option>Product</option></select></label>
+  <div class="full actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div></form>`);
+  document.getElementById('pf').onsubmit = e => {
+    e.preventDefault();
+    data.products.push({ id: Date.now(), name: document.getElementById('pn').value, price: +document.getElementById('pp').value, type: document.getElementById('pt').value });
+    save(); closeModal(); render();
+  };
+}
+
+function salesTable(a){
+ if(!a.length) return '<div class="empty">No sales yet.</div>';
+ return `<div class="table"><table><thead><tr><th>Client</th><th>Item</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>${a.map(s=>`<tr><td><b>${esc(s.client)}</b><br><span class="muted">${esc(s.phone||'')}</span></td><td>${esc(s.product)}</td><td>${rs(s.amount)}</td><td><span class="badge ${s.payment==='Paid'?'Active':'Expired'}">${s.payment}</span></td><td>${s.date}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function salesPage(){ return `<div class="sectionHead"><div><h1>Sales</h1></div><button class="primary" onclick="openSale()">＋ Add Sale</button></div><section>${salesTable(data.sales)}</section>`; }
+
+function productsPage(){
+ const rows = data.products.map(p=>`<tr><td><div style="display:flex;align-items:center;gap:8px">${getProductIcon(p.name)}<b>${esc(p.name)}</b></div></td><td>${rs(p.price)}</td><td>${p.type}</td></tr>`).join('');
+ return `<div class="sectionHead"><div><h1>Products</h1></div><button class="primary" onclick="openProduct()">＋ Add Product</button></div><section><div class="table"><table><thead><tr><th>Product</th><th>Price</th><th>Type</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function clientsPage(){
+ let map={}; data.sales.forEach(s=>{if(!s.client)return; let k=s.client; if(!map[k])map[k]={name:s.client,phone:s.phone,total:0,count:0}; map[k].total+=Number(s.amount); map[k].count++;});
+ let arr=Object.values(map);
+ return `<h1>Clients</h1><section><div class="table"><table><thead><tr><th>Name</th><th>Phone</th><th>Purchases</th><th>Total</th></tr></thead><tbody>${arr.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.phone||'—')}</td><td>${c.count}</td><td>${rs(c.total)}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+
+function pendingPage(){
+ let pending=data.sales.filter(s=>s.payment!=='Paid');
+ return `<h1>Pending Payments</h1><section>${salesTable(pending)}</section>`;
+}
+
+function expensesPage(){
+ return `<div class="sectionHead"><div><h1>Expenses</h1></div><button class="primary" onclick="openExpense()">＋ Add Expense</button></div><section>${data.expenses.length?`<div class="table"><table><thead><tr><th>Title</th><th>Amount</th><th>Date</th></tr></thead><tbody>${data.expenses.map(e=>`<tr><td>${esc(e.title)}</td><td>${rs(e.amount)}</td><td>${e.date}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No expenses.</div>'}</section>`;
+}
+
+function openExpense(){
+ modal(`<div class="sectionHead"><h2>Add Expense</h2><button onclick="closeModal()">×</button></div><form id="ef" class="grid">
+ <label class="field full"><span>Title *</span><input id="et" required></label>
+ <label class="field"><span>Amount *</span><input id="ea" type="number" required></label>
+ <label class="field"><span>Date</span><input id="ed" type="date" value="${today()}"></label>
+ <div class="full actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div></form>`);
+ ef.onsubmit=e=>{e.preventDefault(); data.expenses.unshift({id:Date.now(), title:document.getElementById('et').value, amount:+document.getElementById('ea').value, date:document.getElementById('ed').value}); save(); closeModal(); render();}
+}
+
+function profitPage(){
+ let paid=income(data.sales), cost=purchase(data.sales.filter(s=>s.payment!=='Pending')), exp=expenses(data.expenses);
+ return `<h1>Profit Analytics</h1><div class="cards"><div class="card"><small>REVENUE</small><b>${rs(paid)}</b></div><div class="card"><small>COST</small><b>${rs(cost)}</b></div><div class="card"><small>EXPENSES</small><b>${rs(exp)}</b></div><div class="card"><small>NET PROFIT</small><b style="color:#166534">${rs(paid-cost-exp)}</b></div></div>`;
+}
+
+function reports(){ return `<h1>Reports & Backup</h1><button class="primary" onclick="const blob=new Blob([JSON.stringify(data)],{type:'json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup.json';a.click();">Export Backup</button>`; }
+
+window.renderApp = function() {
+  document.getElementById('app').innerHTML = page==='dashboard'?dashboard():page==='sales'?salesPage():page==='products'?productsPage():page==='clients'?clientsPage():page==='pending'?pendingPage():page==='expenses'?expensesPage():page==='profit'?profitPage():reports();
+}
+function render() { window.renderApp(); }
+
+Object.assign(window, { modal, closeModal, go, render, openSale, openProduct, openExpense });
+
+render();
+
+onSnapshot(cloudRef, snap => {
+  if(snap.exists() && snap.data().data) {
+    data = snap.data().data;
+    localStorage.setItem(DB, JSON.stringify(data));
+    cloudReady = true;
+    document.getElementById('syncStatus').textContent = 'CLOUD SYNCED ✓';
+    render();
+  } else {
+    cloudReady = true;
+    save();
+  }
+}, err => { document.getElementById('syncStatus').textContent = 'OFFLINE'; });
+</script>
+</body>
+</html>
