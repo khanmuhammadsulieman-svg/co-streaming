@@ -61,7 +61,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
 
 <header>
   <div class="brand">CO STREAMING<small id="syncStatus">CONNECTED...</small></div>
-  <div style="display:flex;gap:12px;align-items:center">
+  <div style="display:flex;gap:8px;align-items:center">
+    <button id="installBtn" class="small" style="display:none;background:#2563eb;color:#fff" onclick="installApp()">⬇ Install App</button>
     <button class="primary small hideMob" onclick="openSale()">＋ Sale</button>
     <div style="position:relative;">
       <button class="menu-btn" onclick="toggleMenu(event)">⋮</button>
@@ -426,6 +427,24 @@ function render() { window.renderApp(); }
 Object.assign(window, { modal, closeModal, go, render, openSale, openProduct, openExpense });
 
 render();
+
+let deferredInstallPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBtn').style.display = 'inline-block';
+});
+
+window.installApp = async function() {
+  if (!deferredInstallPrompt) {
+    alert('App install prompt is ready. If not visible, use Chrome menu (⋮) -> "Install app".');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('installBtn').style.display = 'none';
+}
 
 onSnapshot(cloudRef, snap => {
   if(snap.exists() && snap.data().data) {
