@@ -374,7 +374,7 @@ function openProduct() {
   <div class="full actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save</button></div></form>`);
   document.getElementById('pf').onsubmit = e => {
     e.preventDefault();
-    data.products.push({ id: Date.now(), name: document.getElementById('pn'].value, price: +document.getElementById('pp').value, type: document.getElementById('pt').value });
+    data.products.push({ id: Date.now(), name: document.getElementById('pn').value, price: +document.getElementById('pp').value, type: document.getElementById('pt').value });
     save(); closeModal(); render();
   };
 }
