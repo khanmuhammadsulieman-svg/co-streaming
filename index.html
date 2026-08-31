@@ -28,16 +28,17 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
 @media(max-width:700px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}.card b{font-size:18px}.hideMob{display:none}}
 </style>
 <script>
-  function instantLoginCheck(event) {
+  function handleLogin(event) {
     event.preventDefault();
-    const u = document.getElementById('loginUser').value;
+    const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
-    if (u === 'admin' && p === 'admin') {
+    let savedCreds = JSON.parse(localStorage.getItem('dr_v2_auth') || JSON.stringify({user:'admin', pass:'admin'}));
+    if (u === savedCreds.user && p === savedCreds.pass) {
       sessionStorage.setItem('auth', 'true');
       document.getElementById('loginScreen').style.display = 'none';
       if(window.renderApp) window.renderApp();
     } else {
-      alert("Incorrect Username or Password. Use admin / admin");
+      alert("Incorrect Username or Password. Default: admin / admin");
     }
   }
 </script>
@@ -47,11 +48,12 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
 <div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
   <div class="card" style="width:min(90%, 350px);box-shadow:0 8px 24px rgba(0,0,0,0.05);">
     <h2 style="margin-bottom:16px;text-align:center">DR Streaming V2</h2>
-    <form onsubmit="instantLoginCheck(event)" class="grid">
+    <form onsubmit="handleLogin(event)" class="grid">
       <label class="field full"><span>Username</span><input id="loginUser" required placeholder="admin"></label>
       <label class="field full"><span>Password</span><input id="loginPass" type="password" required placeholder="admin"></label>
       <div class="full" style="margin-top:10px;">
         <button class="primary" type="submit" style="width:100%;padding:12px;font-size:14px">Login to Dashboard</button>
+        <button type="button" id="bioLoginBtn" class="primary" style="width:100%;padding:12px;font-size:14px;background:#10b981;margin-top:8px;display:none" onclick="if(window.loginWithBiometrics) window.loginWithBiometrics();">👆 Fingerprint / Face ID</button>
       </div>
     </form>
   </div>
@@ -72,6 +74,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
         <a onclick="go('expenses');closeMenu()">💸 Expenses</a>
         <a onclick="go('profit');closeMenu()">📈 Profit</a>
         <a onclick="go('reports');closeMenu()">📊 Reports</a>
+        <a onclick="setupBiometrics();closeMenu()" style="color:#10b981;background:#ecfdf5">👆 Enable Fingerprint</a>
+        <a onclick="changeCredentialsModal();closeMenu()" style="color:var(--blue)">⚙️ Change User / Pass</a>
         <a onclick="logoutUser();closeMenu()" style="color:#b91c1c">🚪 Logout</a>
       </div>
     </div>
@@ -161,10 +165,92 @@ if(!data.products || data.products.length === 0) {
 
 let page='dashboard', reportRange='month';
 
+function getBuffer(len) {
+  const b = new Uint8Array(len);
+  window.crypto.getRandomValues(b);
+  return b;
+}
+
+window.setupBiometrics = async function() {
+  if (!window.PublicKeyCredential) {
+    alert("Biometrics not supported on this device/browser.");
+    return;
+  }
+  try {
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: getBuffer(32),
+        rp: { name: "DR Streaming V2", id: window.location.hostname || "localhost" },
+        user: { id: getBuffer(16), name: "admin", displayName: "Admin" },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+        timeout: 60000,
+        attestation: "none"
+      }
+    });
+    const credId = Array.from(new Uint8Array(cred.rawId));
+    localStorage.setItem('dr_v2_bio', JSON.stringify(credId));
+    alert("Fingerprint / Face ID enabled successfully!");
+    document.getElementById('bioLoginBtn').style.display = 'block';
+  } catch(e) {
+    alert("Biometric setup canceled or failed.");
+  }
+}
+
+window.loginWithBiometrics = async function() {
+  const storedId = JSON.parse(localStorage.getItem('dr_v2_bio'));
+  if(!storedId) return alert("Biometrics not configured yet.");
+  try {
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge: getBuffer(32),
+        rpId: window.location.hostname || "localhost",
+        allowCredentials: [{ type: "public-key", id: new Uint8Array(storedId) }],
+        userVerification: "required",
+        timeout: 60000
+      }
+    });
+    if(assertion) {
+      sessionStorage.setItem('auth', 'true');
+      document.getElementById('loginScreen').style.display = 'none';
+      render();
+    }
+  } catch(e) {
+    alert("Biometric verification failed.");
+  }
+}
+
+window.changeCredentialsModal = function() {
+  let saved = JSON.parse(localStorage.getItem('dr_v2_auth') || JSON.stringify({user:'admin', pass:'admin'}));
+  modal(`<div class="sectionHead"><h2>Change Credentials</h2><button onclick="closeModal()">×</button></div>
+  <form id="ccForm" class="grid">
+    <label class="field full"><span>New Username</span><input id="ncUser" required value="${saved.user}"></label>
+    <label class="field full"><span>Current Password</span><input id="ncCurr" type="password" required></label>
+    <label class="field full"><span>New Password</span><input id="ncNew" type="password" required></label>
+    <div class="full actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Save Updates</button></div>
+  </form>`);
+  document.getElementById('ccForm').onsubmit = e => {
+    e.preventDefault();
+    if(document.getElementById('ncCurr').value !== saved.pass) {
+      alert("Current password incorrect!");
+      return;
+    }
+    localStorage.setItem('dr_v2_auth', JSON.stringify({
+      user: document.getElementById('ncUser').value.trim(),
+      pass: document.getElementById('ncNew').value
+    }));
+    closeModal();
+    alert("Credentials updated successfully!");
+  };
+}
+
 window.onload = () => {
   if(sessionStorage.getItem('auth') === 'true') {
     document.getElementById('loginScreen').style.display = 'none';
     render();
+  }
+  if(localStorage.getItem('dr_v2_bio') && window.PublicKeyCredential) {
+    document.getElementById('bioLoginBtn').style.display = 'block';
   }
 }
 
@@ -202,8 +288,7 @@ function closeModal(){document.getElementById('modal').classList.remove('show')}
 function go(p){page=p;document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.page===p));render()}
 
 function dashboard(){
- const paid=income(data.sales), gross=grossSales(data.sales);
- const cost=purchase(data.sales.filter(s=>s.payment==='Paid' || s.payment==='Partial')), exp=expenses(data.expenses), profit=paid-cost-exp;
+ const paid=income(data.sales), cost=purchase(data.sales.filter(s=>s.payment==='Paid' || s.payment==='Partial')), exp=expenses(data.expenses), profit=paid-cost-exp;
  const pending=data.sales.filter(s=>s.payment!=='Paid');
  
  return `<h1>Admin Overview</h1><p class="muted">Independent Dashboard v2</p>
