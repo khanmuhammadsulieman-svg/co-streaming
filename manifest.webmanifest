@@ -1,0 +1,15 @@
+{
+  "name": "Co Streaming",
+  "short_name": "CoStreaming",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101827",
+  "theme_color": "#101827",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/khanmuhammadsulieman-svg/co-streaming/main/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
