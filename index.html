@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#101827">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>DR Streaming Manager V2</title>
+<title>Co Streaming</title>
 <style>
 :root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#687386;--blue:#2563eb;--line:#e6eaf0}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -32,7 +32,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
     event.preventDefault();
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
-    let savedCreds = JSON.parse(localStorage.getItem('dr_v2_auth') || JSON.stringify({user:'admin', pass:'admin'}));
+    let savedCreds = JSON.parse(localStorage.getItem('co_streaming_auth') || JSON.stringify({user:'admin', pass:'admin'}));
     if (u === savedCreds.user && p === savedCreds.pass) {
       sessionStorage.setItem('auth', 'true');
       document.getElementById('loginScreen').style.display = 'none';
@@ -47,7 +47,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
 
 <div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
   <div class="card" style="width:min(90%, 350px);box-shadow:0 8px 24px rgba(0,0,0,0.05);">
-    <h2 style="margin-bottom:16px;text-align:center">DR Streaming V2</h2>
+    <h2 style="margin-bottom:16px;text-align:center">Co Streaming</h2>
     <form onsubmit="handleLogin(event)" class="grid">
       <label class="field full"><span>Username</span><input id="loginUser" required placeholder="admin"></label>
       <label class="field full"><span>Password</span><input id="loginPass" type="password" required placeholder="admin"></label>
@@ -60,7 +60,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 7px
 </div>
 
 <header>
-  <div class="brand">DR STREAMING V2<small id="syncStatus">CONNECTED...</small></div>
+  <div class="brand">CO STREAMING<small id="syncStatus">CONNECTED...</small></div>
   <div style="display:flex;gap:12px;align-items:center">
     <button class="primary small hideMob" onclick="openSale()">＋ Sale</button>
     <div style="position:relative;">
@@ -111,10 +111,10 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const firestore = getFirestore(firebaseApp);
-const cloudRef = doc(firestore, "dr_streaming_v2", "independent_admin");
+const cloudRef = doc(firestore, "co_streaming_v1", "independent_admin");
 
 let cloudReady = false;
-const DB = 'dr_streaming_v2_local';
+const DB = 'co_streaming_local_v1';
 let data = JSON.parse(localStorage.getItem(DB) || '{}');
 
 if(!data.sales) data.sales=[];
@@ -180,7 +180,7 @@ window.setupBiometrics = async function() {
     const cred = await navigator.credentials.create({
       publicKey: {
         challenge: getBuffer(32),
-        rp: { name: "DR Streaming V2", id: window.location.hostname || "localhost" },
+        rp: { name: "Co Streaming", id: window.location.hostname || "localhost" },
         user: { id: getBuffer(16), name: "admin", displayName: "Admin" },
         pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
         authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
@@ -189,7 +189,7 @@ window.setupBiometrics = async function() {
       }
     });
     const credId = Array.from(new Uint8Array(cred.rawId));
-    localStorage.setItem('dr_v2_bio', JSON.stringify(credId));
+    localStorage.setItem('co_streaming_bio', JSON.stringify(credId));
     alert("Fingerprint / Face ID enabled successfully!");
     document.getElementById('bioLoginBtn').style.display = 'block';
   } catch(e) {
@@ -198,7 +198,7 @@ window.setupBiometrics = async function() {
 }
 
 window.loginWithBiometrics = async function() {
-  const storedId = JSON.parse(localStorage.getItem('dr_v2_bio'));
+  const storedId = JSON.parse(localStorage.getItem('co_streaming_bio'));
   if(!storedId) return alert("Biometrics not configured yet.");
   try {
     const assertion = await navigator.credentials.get({
@@ -221,7 +221,7 @@ window.loginWithBiometrics = async function() {
 }
 
 window.changeCredentialsModal = function() {
-  let saved = JSON.parse(localStorage.getItem('dr_v2_auth') || JSON.stringify({user:'admin', pass:'admin'}));
+  let saved = JSON.parse(localStorage.getItem('co_streaming_auth') || JSON.stringify({user:'admin', pass:'admin'}));
   modal(`<div class="sectionHead"><h2>Change Credentials</h2><button onclick="closeModal()">×</button></div>
   <form id="ccForm" class="grid">
     <label class="field full"><span>New Username</span><input id="ncUser" required value="${saved.user}"></label>
@@ -235,7 +235,7 @@ window.changeCredentialsModal = function() {
       alert("Current password incorrect!");
       return;
     }
-    localStorage.setItem('dr_v2_auth', JSON.stringify({
+    localStorage.setItem('co_streaming_auth', JSON.stringify({
       user: document.getElementById('ncUser').value.trim(),
       pass: document.getElementById('ncNew').value
     }));
@@ -249,7 +249,7 @@ window.onload = () => {
     document.getElementById('loginScreen').style.display = 'none';
     render();
   }
-  if(localStorage.getItem('dr_v2_bio') && window.PublicKeyCredential) {
+  if(localStorage.getItem('co_streaming_bio') && window.PublicKeyCredential) {
     document.getElementById('bioLoginBtn').style.display = 'block';
   }
 }
@@ -291,7 +291,7 @@ function dashboard(){
  const paid=income(data.sales), cost=purchase(data.sales.filter(s=>s.payment==='Paid' || s.payment==='Partial')), exp=expenses(data.expenses), profit=paid-cost-exp;
  const pending=data.sales.filter(s=>s.payment!=='Paid');
  
- return `<h1>Admin Overview</h1><p class="muted">Independent Dashboard v2</p>
+ return `<h1>Admin Overview</h1><p class="muted">Co Streaming Dashboard</p>
  <div class="cards">
  <div class="card" onclick="showDetails('income')" style="cursor:pointer"><small>💼 PAID SALES</small><b>${rs(paid)}</b></div>
  <div class="card" onclick="showDetails('purchase')" style="cursor:pointer"><small>🛒 PURCHASE COST</small><b>${rs(cost)}</b></div>
